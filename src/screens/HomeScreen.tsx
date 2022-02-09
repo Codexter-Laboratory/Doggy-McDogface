@@ -22,23 +22,32 @@ export const HomeScreen = ({navigation}) => {
   const [dogs, setDogs] = useState(dogData);
   const [search, setSearch] = useState('');
 
-  const [isClicked, setClicked] = useState(true);
+  const [isClicked, setClicked] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [filterClicked, setFilterClicked] = useState({
+    withSubs: false,
+    withoutSubs: false,
+  });
 
   useEffect(() => {
     dispatch(fetchBreeds());
-    if (!search.length) {
-      setDogs(dogData);
+    if (!search) {
+      if (!filterClicked.withSubs) {
+        if (!filterClicked.withoutSubs) {
+          setDogs(dogData);
+        }
+      }
     }
     setTimeout(() => {
       setLoading(false);
     }, 500);
-  }, [dogData]);
+  });
 
   const onDropdownPress = () => {
     setClicked(!isClicked);
   };
 
+  //filter data when entering values in the search box
   const onChange = e => {
     setSearch(e);
     let filteredKeys = Object.keys(dogData).filter(k =>
@@ -53,14 +62,40 @@ export const HomeScreen = ({navigation}) => {
     setDogs(tempObj);
   };
 
-  const onSubBreedClick = () => {
-    let a = Object.keys(dogData).map(k => k);
-    let f = {};
+  //only show data that has sub breeds
+  const onSubBreedPress = () => {
+    setFilterClicked({withSubs: true, withoutSubs: false});
+    let a = Object.values(dogData).filter(k => k.length);
+    let temp = {};
+
+    a.map(i => {
+      return Object.keys(dogData).map(k => {
+        if (dogData[k] === i) {
+          Object.assign(temp, {[k]: i});
+        }
+      });
+    });
+    console.log(temp);
+    setDogs(temp);
+  };
+
+  //show data with no sub breeds (why not)
+  const noSubPress = () => {
+    setFilterClicked({withSubs: false, withoutSubs: true});
+    let a = Object.keys(dogData).filter(k => !dogData[k].length);
+    let temp = {};
     a.map(i => {
       if (Object.keys(dogData).includes(i)) {
-        Object.assign(f, {[i]: dogData[i]});
+        Object.assign(temp, {[i]: dogData[i]});
       }
     });
+    console.log(temp);
+    setDogs(temp);
+  };
+
+  const onAllPress = () => {
+    setFilterClicked({withSubs: false, withoutSubs: false});
+    setDogs(dogData);
   };
 
   return (
@@ -88,15 +123,43 @@ export const HomeScreen = ({navigation}) => {
       {isClicked ? (
         <View style={styles.filtersContainer}>
           <TouchableOpacity
-            style={styles.filterButtons}
-            onPress={onSubBreedClick}>
-            <Text style={{color: 'white'}}>Sub-breeds</Text>
+            style={
+              filterClicked.withSubs
+                ? styles.filterButtonsClicked
+                : styles.filterButtons
+            }
+            onPress={onSubBreedPress}>
+            <Text style={{color: filterClicked.withSubs ? '#000' : '#fff'}}>
+              Sub-breeds
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.filterButtons}>
-            <Text style={{color: 'white'}}>No Sub Breeds</Text>
+          <TouchableOpacity
+            onPress={noSubPress}
+            style={
+              filterClicked.withoutSubs
+                ? styles.filterButtonsClicked
+                : styles.filterButtons
+            }>
+            <Text style={{color: filterClicked.withoutSubs ? '#000' : '#fff'}}>
+              No Sub Breeds
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.filterButtons}>
-            <Text style={{color: 'white'}}>All breeds</Text>
+          <TouchableOpacity
+            onPress={onAllPress}
+            style={
+              !filterClicked.withSubs && !filterClicked.withoutSubs
+                ? styles.filterButtonsClicked
+                : styles.filterButtons
+            }>
+            <Text
+              style={{
+                color:
+                  filterClicked.withSubs || filterClicked.withoutSubs
+                    ? '#fff'
+                    : '#000',
+              }}>
+              All breeds
+            </Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -173,6 +236,14 @@ const styles = StyleSheet.create({
     width: 110,
     height: 40,
     backgroundColor: '#818181',
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterButtonsClicked: {
+    width: 110,
+    height: 40,
+    backgroundColor: '#fff',
     borderRadius: 5,
     alignItems: 'center',
     justifyContent: 'center',
